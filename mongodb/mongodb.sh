@@ -25,6 +25,7 @@ MONGO=`which mongo`
 JQ=`which jq`
 EXIT_ERROR=1
 EXIT_OK=0
+#SCRIPT_LOG=/var/log/zabbix/mongodb.sh.log
 
 if [ ! -x "$MONGO" ] ; then
   echo "mongo not found"
@@ -37,6 +38,13 @@ elif [ $# -eq 0 ] ; then
   exit $EXIT_ERROR
 fi
 index=.$(echo $@ | sed 's/[ ,]/./g')
+
+# support mongodb.status[".wiredTiger.cache.-bytes currently in the cache-"]
+# replace to .wiredTiger.cache."bytes currently in the cache"
+if [[ $index = ..wiredTiger*  ]] ; then
+  index=$(echo $@ | sed 's/-/\"/g')
+fi
+
 MONGO_CMD="$MONGO --host ${DB_HOST:-localhost} --port ${DB_PORT:-27017} --authenticationDatabase admin --quiet"
 [[ "$DB_USERNAME" ]] && MONGO_CMD="${MONGO_CMD} --username ${DB_USERNAME}"
 [[ "$DB_PASSWORD" ]] && MONGO_CMD="${MONGO_CMD} --password ${DB_PASSWORD}"
@@ -55,7 +63,7 @@ if [ $mongo_status -ne $EXIT_OK ] ; then
   echo "mongo exec error"
   exit $EXIT_ERROR
 fi
-value=$(echo $output | jq $index)
+value=$(echo $output | jq "${index}")
 jq_status=$?
 echo $value
 
