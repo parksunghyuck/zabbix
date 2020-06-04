@@ -15,12 +15,12 @@
 #  - fixed json output to comform
 #  - Use jq to parse json https://stedolan.github.io/jq/
 #  - upated index to handle space or comma betwee values
-# 
+#
 ##################################################
-DB_HOST=
-DB_PORT=
-DB_USERNAME=
-DB_PASSWORD=
+DB_HOST=127.0.0.1
+DB_PORT=27017
+DB_USERNAME=root
+DB_PASSWORD=dlwwlakfwk
 MONGO=`which mongo`
 JQ=`which jq`
 EXIT_ERROR=1
@@ -50,12 +50,13 @@ MONGO_CMD="$MONGO --host ${DB_HOST:-localhost} --port ${DB_PORT:-27017} --authen
 [[ "$DB_PASSWORD" ]] && MONGO_CMD="${MONGO_CMD} --password ${DB_PASSWORD}"
 
 output=$(
-	$MONGO_CMD <<< "db.runCommand( { serverStatus: 1} )" |\
-	sed -e 's/NumberLong(\(.*\))/\1/ 
-	  s/ISODate(\(.*\))/\1/
-	  s/ObjectId(\(.*\))/\1/
-	  s/Timestamp(.*)/"&"/
-	  s/"\([0-9]*\)"/\1/'
+        $MONGO_CMD <<< "db.runCommand( { serverStatus: 1} )" |\
+        sed -e 's/NumberLong(\(.*\))/\1/
+          s/ISODate(\(.*\))/\1/
+          s/ObjectId(\(.*\))/\1/
+          s/Timestamp(.*)/"&"/
+          s/"\([0-9]*\)"/\1/
+          s/BinData(0,\(.*\))/\1/'
 )
 
 mongo_status=${PIPESTATUS[0]}
@@ -63,7 +64,7 @@ if [ $mongo_status -ne $EXIT_OK ] ; then
   echo "mongo exec error"
   exit $EXIT_ERROR
 fi
+
 value=$(echo $output | jq "${index}")
 jq_status=$?
 echo $value
-
